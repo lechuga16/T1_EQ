@@ -1,4 +1,4 @@
-# Tier1 EQ
+# Tier1 EQ v1.0
 
 [EN] [translation](https://translate.google.com/translate?sl=es&tl=en&u=https://github.com/lechuga16/T1_EQ)
 
