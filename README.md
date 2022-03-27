@@ -12,6 +12,7 @@
 
 # Copyright
 - Tier1 EQ es una adaptación usando como base la configuración "Equilibrium 3.0c". 
+- Para la instalación de este modo, será obligatorio tener L4D2-Competitive-Rework instalado como base de algunos plugins.
 - Todos los plugins y códigos acondicionados son de sus respectivos autores.
 - https://github.com/Attano/Equilibrium
 - https://github.com/SirPlease/L4D2-Competitive-Rework
