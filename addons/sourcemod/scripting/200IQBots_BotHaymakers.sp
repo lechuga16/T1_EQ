@@ -3,6 +3,7 @@
 
 #include <sourcemod>
 #include <sdktools>
+#include <l4d2util>
 #define PLUGIN_VERSION "1.0.1" 
 
 
@@ -23,7 +24,7 @@ public void OnPluginStart()
 
 public Action OnPlayerRunCmd(int client,int &buttons)
 {
-    if (IsClientInGame(client) && IsPlayerAlive(client) && (GetClientTeam(client) == 3) && IsFakeClient(client) && (GetEntProp(client, Prop_Send, "m_zombieClass") == 8))
+    if (IsPlayerAlive(client) && IsInfected(client) && IsFakeClient(client) && (GetInfectedClass(client) == L4D2Infected_Tank))
     {
 		if (buttons & IN_ATTACK)
         {

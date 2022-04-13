@@ -1,12 +1,13 @@
 #pragma semicolon 1
 #pragma newdecls required //強制1.7以後的新語法
+
 #include <sourcemod>
 #include <sdkhooks>
 #include <sdktools>
 #include <colors>
+#include <l4d2util>
 
 #define CLASSNAME_LENGTH 64
-#define L4D_TEAM_SURVIVOR
 
 ConVar g_hEnable, g_hFireDisable, g_hPipeBombDisable;
 
@@ -39,16 +40,16 @@ public void OnPluginStart()
 								FCVAR_NOTIFY, true, 0.0, true, 1.0 );
 
 	g_hFireDisable = CreateConVar(	"anti_friendly_fire_immue_fire", "1",
-								"If 1, Disable Fire friendly fire.",
-								FCVAR_NOTIFY, true, 0.0, true, 1.0 );
+									"If 1, Disable Fire friendly fire.",
+									FCVAR_NOTIFY, true, 0.0, true, 1.0 );
 
-	g_hPipeBombDisable = CreateConVar( "anti_friendly_fire_immue_pipebomb", "1",
-								"If 1, Disable Pipe Bomb Explosive friendly fire.",
-								FCVAR_NOTIFY, true, 0.0, true, 1.0 );
+	g_hPipeBombDisable = CreateConVar(	"anti_friendly_fire_immue_pipebomb", "1",
+										"If 1, Disable Pipe Bomb Explosive friendly fire.",
+										FCVAR_NOTIFY, true, 0.0, true, 1.0 );
 
 	HookEvent("player_hurt", Event_PlayerHurt);
 
-	AutoExecConfig(false, "anti-friendly_fire");
+	// AutoExecConfig(false, "anti-friendly_fire");
 }	
 
 public Action Event_PlayerHurt(Event event, const char[] name, bool dontBroadcast) 
@@ -56,7 +57,15 @@ public Action Event_PlayerHurt(Event event, const char[] name, bool dontBroadcas
 	int victim = GetClientOfUserId(event.GetInt("userid"));
 	int attacker = GetClientOfUserId(event.GetInt("attacker"));
 	int damage = event.GetInt("dmg_health");
-	if(g_hEnable.BoolValue == false || !IsClientAndInGame(attacker)  || !IsClientAndInGame(victim) || GetClientTeam(victim)!=2 || attacker == victim || damage <=0) { return Plugin_Continue; }
+	if(g_hEnable.BoolValue == false 
+		|| !IsValidClientIndex(attacker)  
+		|| !IsValidClientIndex(victim) 
+		|| !IsSurvivor(victim)
+		|| attacker == victim 
+		|| damage <=0) 
+		{
+			return Plugin_Continue; 
+		}
 	
 	char WeaponName[CLASSNAME_LENGTH];
 	event.GetString("weapon", WeaponName, sizeof(WeaponName));
@@ -65,12 +74,19 @@ public Action Event_PlayerHurt(Event event, const char[] name, bool dontBroadcas
 	if(IsPipeBombExplode(WeaponName)) 
 	{
 		bIsSpecialWeapon = true;
-		if(g_hPipeBombDisable.BoolValue == false) return Plugin_Continue;
+		if(g_hPipeBombDisable.BoolValue == false)
+		{
+			return Plugin_Continue;
+		}
+
 	}
 	else if(IsFire(WeaponName) || IsFireworkcrate(WeaponName))
 	{
 		bIsSpecialWeapon = true;
-		if(g_hFireDisable.BoolValue == false) return Plugin_Continue;
+		if(g_hFireDisable.BoolValue == false) 
+		{
+			return Plugin_Continue;
+		}
 	}
 	
 	if(bIsSpecialWeapon)
@@ -78,7 +94,7 @@ public Action Event_PlayerHurt(Event event, const char[] name, bool dontBroadcas
 		int health = event.GetInt("health");
 		SetEntityHealth(victim, health + damage);
 	}
-	else if(!bIsSpecialWeapon && GetClientTeam(attacker) == 2)
+	else if(!bIsSpecialWeapon && IsSurvivor(attacker)) 
 	{
 		int health = event.GetInt("health");
 		SetEntityHealth(victim, health + damage);
@@ -91,15 +107,6 @@ public Action Event_PlayerHurt(Event event, const char[] name, bool dontBroadcas
 void HurtEntity(int victim, int client, float damage)
 {
 	SDKHooks_TakeDamage(victim, client, client, damage, DMG_SLASH);
-}
-
-stock bool IsClientAndInGame(int client)
-{
-	if (0 < client && client < MaxClients)
-	{	
-		return IsClientInGame(client);
-	}
-	return false;
 }
 
 bool IsFire(char[] classname)
