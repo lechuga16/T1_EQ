@@ -1,7 +1,10 @@
 #pragma semicolon 1
 #pragma newdecls required
+
+#include <l4d2util>
 #include <sourcemod>
 #include <sdktools>
+#include <left4dhooks>
 
 ConVar
 	g_hBoomerBhop,
@@ -30,8 +33,6 @@ public void OnPluginStart()
 	g_hBoomerBhop.AddChangeHook(vConVarChanged);
 	g_hVomitRange.AddChangeHook(vConVarChanged);
 	
-
-	FindConVar("z_vomit_fatigue").SetInt(0);
 	FindConVar("z_boomer_near_dist").SetInt(1);
 
 	HookEvent("ability_use", Event_AbilityUse);
@@ -62,7 +63,13 @@ void vGetCvars()
 void Event_AbilityUse(Event event, const char[] name, bool dontBroadcast)
 {
 	int client = GetClientOfUserId(event.GetInt("userid"));
-	if(!client || !IsClientInGame(client) || !IsFakeClient(client) || GetClientTeam(client) != 3 || !IsPlayerAlive(client) || GetEntProp(client, Prop_Send, "m_zombieClass") != 2 || GetEntProp(client, Prop_Send, "m_isGhost") == 1)
+	if(!client 
+		|| !IsClientInGame(client) 
+		|| !IsFakeClient(client) 
+		|| !IsInfected(client)
+		|| !IsPlayerAlive(client) 
+		|| GetInfectedClass(client) != L4D2Infected_Boomer
+		|| IsInfectedGhost(client))
 		return;
 
 	static char sAbility[16];
@@ -76,10 +83,20 @@ public Action OnPlayerRunCmd(int client, int &buttons)
 	if(!g_bBoomerBhop)
 		return Plugin_Continue;
 
-	if(!IsClientInGame(client) || !IsFakeClient(client) || GetClientTeam(client) != 3 || !IsPlayerAlive(client) || GetEntProp(client, Prop_Send, "m_zombieClass") != 2 || GetEntProp(client, Prop_Send, "m_isGhost") == 1)
+	if(!IsClientInGame(client) 
+		|| !IsFakeClient(client) 
+		|| !IsInfected(client)
+		|| !IsPlayerAlive(client) 
+		|| GetInfectedClass(client) != L4D2Infected_Boomer
+		|| IsInfectedGhost(client))
 		return Plugin_Continue;
 
-	if(GetEntityFlags(client) & FL_ONGROUND && GetEntityMoveType(client) != MOVETYPE_LADDER && GetEntProp(client, Prop_Data, "m_nWaterLevel") < 2 && (GetEntProp(client, Prop_Send, "m_hasVisibleThreats") || bTargetSurvivor(client)))
+	if(GetEntityFlags(client) 
+		& FL_ONGROUND && GetEntityMoveType(client) 
+		!= MOVETYPE_LADDER 
+		&& GetEntProp(client, Prop_Data, "m_nWaterLevel") < 2 
+		&& L4D_HasVisibleThreats(client)
+		|| bTargetSurvivor(client))
 	{
 		static float vVel[3];
 		GetEntPropVector(client, Prop_Data, "m_vecVelocity", vVel);
@@ -247,7 +264,10 @@ bool bTraceEntityFilter(int entity, int contentsMask)
 
 	static char classname[9];
 	GetEntityClassname(entity, classname, sizeof classname);
-	if((classname[0] == 'i' && strcmp(classname[1], "nfected") == 0) || (classname[0] == 'w' && strcmp(classname[1], "itch") == 0))
+	if((classname[0] == 'i'
+		&& strcmp(classname[1], "nfected") == 0) 
+		|| (classname[0] == 'w' 
+		&& strcmp(classname[1], "itch") == 0))
 		return false;
 
 	return true;
@@ -266,7 +286,10 @@ float fNearestSurvivorDistance(int client)
 
 	for(i = 1; i <= MaxClients; i++)
 	{
-		if(i != client && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i))
+		if(i != client 
+			&& IsClientInGame(i) 
+			&& GetClientTeam(i) == L4D2Team_Survivor
+			&& IsPlayerAlive(i))
 		{
 			GetClientAbsOrigin(i, vTarg);
 			fDists[iCount++] = GetVectorDistance(vPos, vTarg);
@@ -320,7 +343,7 @@ void vBoomer_OnVomit(int client)
 
 bool bIsAliveSurvivor(int client)
 {
-	return client > 0 && client <= MaxClients && IsClientInGame(client) && GetClientTeam(client) == 2 && IsPlayerAlive(client);
+	return (IsValidClientIndex(client) && IsSurvivor(client) && IsPlayerAlive(client));
 }
 
 int iGetClosestSurvivor(int client, int iExclude = -1, float fDistance)
@@ -346,7 +369,12 @@ int iGetClosestSurvivor(int client, int iExclude = -1, float fDistance)
 	for(i = 0; i < iCount; i++)
 	{
 		iTarget = iTargets[i];
-		if(iTarget && iTarget != iExclude && GetClientTeam(iTarget) == 2 && IsPlayerAlive(iTarget) && !GetEntProp(iTarget, Prop_Send, "m_isIncapacitated"))
+		if(iTarget 
+			&& iTarget 
+			!= iExclude 
+			&& GetClientTeam(iTarget) == 2 
+			&& IsPlayerAlive(iTarget) 
+			&& !L4D_IsPlayerIncapacitated(iTarget))
 		{
 			GetClientAbsOrigin(iTarget, vTarg);
 			fDist = GetVectorDistance(vPos, vTarg);
