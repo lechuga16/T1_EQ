@@ -1,13 +1,13 @@
 #pragma semicolon 1
 #pragma newdecls required
+
+#include <l4d2util>
 #include <sourcemod>
 #include <sdktools>
+#include <left4dhooks>
 
-ConVar
-	g_hSpitterBhop;
-
-bool
-	g_bSpitterBhop;
+ConVar g_hSpitterBhop;
+bool g_bSpitterBhop;
 
 public Plugin myinfo =
 {
@@ -45,10 +45,18 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 	if(!g_bSpitterBhop)
 		return Plugin_Continue;
 
-	if(!IsClientInGame(client) || !IsFakeClient(client) || GetClientTeam(client) != 3 || !IsPlayerAlive(client) || GetEntProp(client, Prop_Send, "m_zombieClass") != 4 || GetEntProp(client, Prop_Send, "m_isGhost") == 1)
+	if(!IsClientInGame(client) 
+		|| !IsFakeClient(client) 
+		|| !IsInfected(client)
+		|| !IsPlayerAlive(client) 
+		|| GetInfectedClass(client) != L4D2Infected_Spitter
+		|| IsInfectedGhost(client))
 		return Plugin_Continue;
 
-	if(GetEntityFlags(client) & FL_ONGROUND && GetEntityMoveType(client) != MOVETYPE_LADDER && GetEntProp(client, Prop_Data, "m_nWaterLevel") < 2 && GetEntProp(client, Prop_Send, "m_hasVisibleThreats"))
+	if(GetEntityFlags(client) & FL_ONGROUND 
+		&& GetEntityMoveType(client) != MOVETYPE_LADDER 
+		&& GetEntProp(client, Prop_Data, "m_nWaterLevel") < 2 
+		&& L4D_HasVisibleThreats(client))
 	{
 		static float vVel[3];
 		GetEntPropVector(client, Prop_Data, "m_vecVelocity", vVel);
@@ -120,7 +128,10 @@ float fNearestSurvivorDistance(int client)
 
 	for(i = 1; i <= MaxClients; i++)
 	{
-		if(i != client && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i))
+		if(i != client 
+			&& IsClientInGame(i) 
+			&& IsSurvivor(i)
+			&& IsPlayerAlive(i))
 		{
 			GetClientAbsOrigin(i, vTarg);
 			fDists[iCount++] = GetVectorDistance(vPos, vTarg);

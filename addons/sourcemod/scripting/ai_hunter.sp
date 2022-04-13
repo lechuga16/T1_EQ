@@ -1,7 +1,10 @@
 #pragma semicolon 1
 #pragma newdecls required
+
+#include <l4d2util>
 #include <sourcemod>
 #include <sdktools>
+#include <left4dhooks>
 
 ConVar
 	g_hLungeInterval,
@@ -47,13 +50,6 @@ public void OnPluginStart()
 	g_hWallDetectionDistance = CreateConVar("ai_wall_detection_distance", "-1.0", "How far in front of himself infected bot will check for a wall. Use '-1' to disable feature");
 	g_hLungeInterval = FindConVar("z_lunge_interval");
 
-	FindConVar("hunter_pounce_ready_range").SetFloat(2000.0);
-	FindConVar("hunter_pounce_max_loft_angle").SetFloat(0.0);
-	FindConVar("hunter_leap_away_give_up_range").SetFloat(0.0);
-	FindConVar("z_pounce_silence_range").SetFloat(999999.0);
-	FindConVar("hunter_committed_attack_range").SetFloat(999999.0);
-	FindConVar("z_pounce_crouch_delay").SetFloat(0.1);
-
 	g_hLungeInterval.AddChangeHook(vConVarChanged);
 	g_hFastPounceProximity.AddChangeHook(vConVarChanged);
 	g_hPounceVerticalAngle.AddChangeHook(vConVarChanged);
@@ -66,15 +62,6 @@ public void OnPluginStart()
 	HookEvent("round_end", Event_RoundEnd, EventHookMode_PostNoCopy);
 	HookEvent("player_spawn", Event_PlayerSpawn);
 	HookEvent("ability_use", Event_AbilityUse);
-}
-
-public void OnPluginEnd()
-{
-	FindConVar("hunter_committed_attack_range").RestoreDefault();
-	FindConVar("hunter_pounce_ready_range").RestoreDefault();
-	FindConVar("hunter_leap_away_give_up_range").RestoreDefault();
-	FindConVar("hunter_pounce_max_loft_angle").RestoreDefault();
-	FindConVar("z_pounce_crouch_delay").RestoreDefault();
 }
 
 public void OnConfigsExecuted()
@@ -121,7 +108,13 @@ void Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast)
 void Event_AbilityUse(Event event, const char[] name, bool dontBroadcast)
 {
 	int client = GetClientOfUserId(event.GetInt("userid"));
-	if(!client || !IsClientInGame(client) || !IsFakeClient(client) || GetClientTeam(client) != 3 || !IsPlayerAlive(client) || GetEntProp(client, Prop_Send, "m_zombieClass") != 3 || GetEntProp(client, Prop_Send, "m_isGhost") == 1)
+	if(!client 
+		|| !IsClientInGame(client) 
+		|| !IsFakeClient(client) 
+		|| !IsInfected(client)
+		|| !IsPlayerAlive(client) 
+		|| GetInfectedClass(client) != L4D2Infected_Hunter
+		|| IsInfectedGhost(client))
 		return;
 	
 	static char sAbility[16];
@@ -132,14 +125,21 @@ void Event_AbilityUse(Event event, const char[] name, bool dontBroadcast)
 
 public Action OnPlayerRunCmd(int client, int &buttons)
 {
-	if(!IsClientInGame(client) || !IsFakeClient(client) || GetClientTeam(client) != 3 || !IsPlayerAlive(client) || GetEntProp(client, Prop_Send, "m_zombieClass") != 3 || GetEntProp(client, Prop_Send, "m_isGhost") == 1)
+	if(!IsClientInGame(client) 
+		|| !IsFakeClient(client) 
+		|| !IsInfected(client)
+		|| !IsPlayerAlive(client) 
+		|| GetInfectedClass(client) != L4D2Infected_Hunter
+		|| L4D_HasVisibleThreats(client))
 		return Plugin_Continue;
 
 	buttons &= ~IN_ATTACK2;
 	
 	static int flags;
 	flags = GetEntityFlags(client);
-	if(flags & FL_DUCKING && flags & FL_ONGROUND && GetEntProp(client, Prop_Send, "m_hasVisibleThreats"))
+	if(flags & FL_DUCKING 
+	&& flags & FL_ONGROUND 
+	&& GetEntProp(client, Prop_Send, "m_hasVisibleThreats"))
 	{
 		static float vPos[3];
 		GetClientAbsOrigin(client, vPos);
@@ -173,7 +173,10 @@ float fNearestSurvivorDistance(int client, const float vOrigin[3])
 
 	for(i = 1; i <= MaxClients; i++)
 	{
-		if(i != client && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i))
+		if(i != client 
+			&& IsClientInGame(i) 
+			&& IsSurvivor(i) 
+			&& IsPlayerAlive(i))
 		{
 			GetClientAbsOrigin(i, vTarg);
 			fDistance[iCount++] = GetVectorDistance(vOrigin, vTarg);
@@ -189,7 +192,11 @@ float fNearestSurvivorDistance(int client, const float vOrigin[3])
 
 bool bIsBotHunter(int client)
 {
-	return client && IsClientInGame(client) && IsFakeClient(client) && GetClientTeam(client) == 3 && GetEntProp(client, Prop_Send, "m_zombieClass") == 3;
+	return (client 
+		&& IsClientInGame(client) 
+		&& IsFakeClient(client) 
+		&& GetClientTeam(client) == L4D2Team_Infected 
+		&& GetInfectedClass(client) == L4D2Infected_Hunter);
 }
 
 void vHunter_OnPounce(int client)
@@ -202,7 +209,7 @@ void vHunter_OnPounce(int client)
 	GetClientAbsOrigin(client, vPos);
 	if(g_fWallDetectionDistance > 0.0 && bHitWall(client, vPos))
 	{
-		iLunge = GetEntPropEnt(client, Prop_Send, "m_customAbility");
+		iLunge = GetInfectedAbilityEntity(client);
 		if(GetRandomInt(0, 1))
 			vAngleLunge(iLunge, 45.0);
 		else
@@ -212,7 +219,7 @@ void vHunter_OnPounce(int client)
 	{	
 		if(bIsBeingWatched(client, g_fAimOffsetSensitivityHunter) && fNearestSurvivorDistance(client, vPos) > g_fStraightPounceProximity)
 		{
-			iLunge = GetEntPropEnt(client, Prop_Send, "m_customAbility");
+			iLunge = GetInfectedAbilityEntity(client);
 			vAngleLunge(iLunge, fGaussianRNG(g_fPounceAngleMean, g_fPounceAngleStd));
 			vLimitLungeVerticality(iLunge);				
 		}	
@@ -360,10 +367,5 @@ float fGaussianRNG(float fMean, float fStd)
 
 bool bIsAliveSurvivor(int client)
 {
-	return bIsValidClient(client) && GetClientTeam(client) == 2 && IsPlayerAlive(client);
-}
-
-bool bIsValidClient(int client)
-{
-	return client > 0 && client <= MaxClients && IsClientInGame(client);
+	return (IsValidClientIndex(client) && IsSurvivor(client) && IsPlayerAlive(client));
 }

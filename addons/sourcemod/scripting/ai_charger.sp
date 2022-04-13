@@ -1,7 +1,10 @@
 #pragma semicolon 1
 #pragma newdecls required
+
+#include <l4d2util>
 #include <sourcemod>
 #include <sdktools>
+#include <left4dhooks>
 
 ConVar
 	g_hChargerBhop,
@@ -76,7 +79,9 @@ void Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast)
 void Event_ChargerChargeStart(Event event, const char[] name, bool dontBroadcast)
 {
 	int client = GetClientOfUserId(event.GetInt("userid"));
-	if(!client || !IsClientInGame(client) || !IsFakeClient(client))
+	if(!client 
+		|| !IsClientInGame(client) 
+		|| !IsFakeClient(client))
 		return;
 
 	int flags = GetEntityFlags(client);
@@ -87,9 +92,14 @@ void Event_ChargerChargeStart(Event event, const char[] name, bool dontBroadcast
 
 public Action OnPlayerRunCmd(int client, int &buttons)
 {
-	if(!IsClientInGame(client) || !IsFakeClient(client) || GetClientTeam(client) != 3 || !IsPlayerAlive(client) || GetEntProp(client, Prop_Send, "m_zombieClass") != 6 || GetEntProp(client, Prop_Send, "m_isGhost") == 1)
+	if(!IsClientInGame(client) 
+		|| !IsFakeClient(client) 
+		|| !IsInfected(client)
+		|| !IsPlayerAlive(client) 
+		|| GetInfectedClass(client) != L4D2Infected_Charger
+		|| IsInfectedGhost(client))
 		return Plugin_Continue;
-
+		
 	static float fSurvivorProximity;
 	fSurvivorProximity = fNearestSurvivorDistance(client);
 	if(fSurvivorProximity > g_fChargeProximity && GetEntProp(client, Prop_Send, "m_iHealth") > g_iHealthThresholdCharger)
@@ -104,7 +114,7 @@ public Action OnPlayerRunCmd(int client, int &buttons)
 	{
 		static int iTarget;
 		iTarget = GetClientAimTarget(client, true);
-		if(bIsAliveSurvivor(iTarget) && !bIsIncapacitated(iTarget))
+		if(bIsAliveSurvivor(iTarget) && !IsIncapacitated(iTarget))
 		{
 			static float vPos[3];
 			static float vTarg[3];
@@ -119,7 +129,12 @@ public Action OnPlayerRunCmd(int client, int &buttons)
 		}
 	}
 
-	if(g_bChargerBhop && 150.0 < fSurvivorProximity < 1000.0 && GetEntityFlags(client) & FL_ONGROUND && GetEntityMoveType(client) != MOVETYPE_LADDER && GetEntProp(client, Prop_Data, "m_nWaterLevel") < 2 && GetEntProp(client, Prop_Send, "m_hasVisibleThreats"))
+	if(g_bChargerBhop 
+		&& 150.0 < fSurvivorProximity < 1000.0 
+		&& GetEntityFlags(client) & FL_ONGROUND 
+		&& GetEntityMoveType(client) != MOVETYPE_LADDER 
+		&& GetEntProp(client, Prop_Data, "m_nWaterLevel") < 2 
+		&& L4D_HasVisibleThreats(client)) 
 	{
 		static float vVel[3];
 		GetEntPropVector(client, Prop_Data, "m_vecVelocity", vVel);
@@ -298,7 +313,10 @@ float fNearestSurvivorDistance(int client)
 
 	for(i = 1; i <= MaxClients; i++)
 	{
-		if(i != client && IsClientInGame(i) && GetClientTeam(i) == 2 && IsPlayerAlive(i))
+		if(i != client 
+			&& IsClientInGame(i) 
+			&& IsSurvivor(i)
+			&& IsPlayerAlive(i))
 		{
 			GetClientAbsOrigin(i, vTarg);
 			fDists[iCount++] = GetVectorDistance(vPos, vTarg);
@@ -353,7 +371,11 @@ void vCharger_OnCharge(int client)
 {
 	static int iTarget;
 	iTarget = GetClientAimTarget(client, true);
-	if(!bIsAliveSurvivor(iTarget) || bIsIncapacitated(iTarget) || bIsPinned(iTarget) || bHitWall(client, iTarget) || bWithinViewAngle(client, iTarget, g_fAimOffsetSensitivityCharger))
+	if(!bIsAliveSurvivor(iTarget) 
+		|| IsIncapacitated(iTarget) 
+		|| bIsPinned(iTarget) 
+		|| bHitWall(client, iTarget) 
+		|| bWithinViewAngle(client, iTarget, g_fAimOffsetSensitivityCharger))
 		iTarget = iGetClosestSurvivor(client, iTarget, g_fChargeStartSpeed);
 
 	if(iTarget == -1)
@@ -394,12 +416,7 @@ void vCharger_OnCharge(int client)
 
 bool bIsAliveSurvivor(int client)
 {
-	return client > 0 && client <= MaxClients && IsClientInGame(client) && GetClientTeam(client) == 2 && IsPlayerAlive(client);
-}
-
-bool bIsIncapacitated(int client)
-{
-	return !!GetEntProp(client, Prop_Send, "m_isIncapacitated");
+	return (IsValidClientIndex(client) && IsSurvivor(client) && IsPlayerAlive(client));
 }
 
 bool bIsPinned(int client)
@@ -441,7 +458,14 @@ int iGetClosestSurvivor(int client, int iExclude = -1, float fDistance)
 	float fFOV = GetFOVDotProduct(g_fAimOffsetSensitivityCharger);
 	for(i = 0; i < iCount; i++)
 	{
-		if(iTargets[i] && iTargets[i] != iExclude && GetClientTeam(iTargets[i]) == 2 && IsPlayerAlive(iTargets[i]) && !bIsIncapacitated(iTargets[i]) && !bIsPinned(iTargets[i]) && !bHitWall(client, iTargets[i]))
+		if(iTargets[i] 
+			&& iTargets[i] 
+			!= iExclude 
+			&& IsSurvivor(iTargets[i])
+			&& IsPlayerAlive(iTargets[i]) 
+			&& !IsIncapacitated(iTargets[i]) 
+			&& !bIsPinned(iTargets[i]) 
+			&& !bHitWall(client, iTargets[i]))
 		{
 			GetClientEyePosition(iTargets[i], vTarg);
 			fDist = GetVectorDistance(vSrc, vTarg);

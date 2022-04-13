@@ -1,10 +1,12 @@
 #pragma semicolon 1
 #pragma newdecls required
+
+#include <l4d2util>
 #include <sourcemod>
 #include <sdktools>
 #include <left4dhooks>
 
-#define SPEEDBOOST	90.0
+#define SPEEDBOOST	20.0
 
 ConVar
 	g_hTankBhop,
@@ -80,10 +82,17 @@ public Action OnPlayerRunCmd(int client, int &buttons)
 	if(!g_bTankBhop)
 		return Plugin_Continue;
 
-	if(!IsClientInGame(client) || !IsFakeClient(client) || GetClientTeam(client) != 3 || !IsPlayerAlive(client) || GetEntProp(client, Prop_Send, "m_zombieClass") != 8 || GetEntProp(client, Prop_Send, "m_isGhost") == 1)
+	if(!IsClientInGame(client) 
+		|| !IsFakeClient(client) 
+		|| !IsInfected(client)
+		|| !IsPlayerAlive(client) 
+		|| GetInfectedClass(client) != L4D2Infected_Tank
+		|| IsInfectedGhost(client))
 		return Plugin_Continue;
-
-	if(GetEntityMoveType(client) == MOVETYPE_LADDER || GetEntProp(client, Prop_Data, "m_nWaterLevel") > 1 || !GetEntProp(client, Prop_Send, "m_hasVisibleThreats"))
+		
+	if(GetEntityMoveType(client) == MOVETYPE_LADDER 
+		|| GetEntProp(client, Prop_Data, "m_nWaterLevel") > 1 
+		|| !L4D_HasVisibleThreats(client))
 		return Plugin_Continue;
 
 	static float vVel[3];
@@ -321,15 +330,19 @@ public Action L4D_TankRock_OnRelease(int tank, int rock, float vecPos[3], float 
 	if(rock <= MaxClients || !IsValidEntity(rock))
 		return Plugin_Continue;
 
-	if(tank < 1 || tank > MaxClients || !IsClientInGame(tank)|| GetClientTeam(tank) != 3 || GetEntProp(tank, Prop_Send, "m_zombieClass") != 8)
+	if(tank < 1 
+		|| tank > MaxClients 
+		|| !IsClientInGame(tank)
+		|| !IsInfected(tank)
+		|| GetInfectedClass(tank) != L4D2Infected_Tank)
 		return Plugin_Continue;
-
+		
 	if(!IsFakeClient(tank) && (!CheckCommandAccess(tank, "", ADMFLAG_ROOT) || GetClientButtons(tank) & IN_SPEED == 0))
 		return Plugin_Continue;
 
 	static int iTarget;
 	iTarget = GetClientAimTarget(tank, true);
-	if(bIsAliveSurvivor(iTarget) && !bIsIncapacitated(iTarget) && !bIsPinned(iTarget) && !bHitWall(tank, rock, iTarget) && !bWithinViewAngle(tank, iTarget, g_fAimOffsetSensitivityTank))
+	if(bIsAliveSurvivor(iTarget) && !IsIncapacitated(iTarget) && !bIsPinned(iTarget) && !bHitWall(tank, rock, iTarget) && !bWithinViewAngle(tank, iTarget, g_fAimOffsetSensitivityTank))
 		return Plugin_Continue;
 	
 	iTarget = iGetClosestSurvivor(tank, iTarget, rock, 2.0 * g_fTankThrowForce);
@@ -373,12 +386,7 @@ public Action L4D_TankRock_OnRelease(int tank, int rock, float vecPos[3], float 
 
 bool bIsAliveSurvivor(int client)
 {
-	return client > 0 && client <= MaxClients && IsClientInGame(client) && GetClientTeam(client) == 2 && IsPlayerAlive(client);
-}
-
-bool bIsIncapacitated(int client)
-{
-	return !!GetEntProp(client, Prop_Send, "m_isIncapacitated");
+	return (IsValidClientIndex(client) && IsSurvivor(client) && IsPlayerAlive(client));
 }
 
 bool bIsPinned(int client)
@@ -389,10 +397,6 @@ bool bIsPinned(int client)
 		return true;
 	if(GetEntPropEnt(client, Prop_Send, "m_pounceAttacker") > 0)
 		return true;
-	/*if(GetEntPropEnt(client, Prop_Send, "m_jockeyAttacker") > 0)
-		return true;
-	if(GetEntPropEnt(client, Prop_Send, "m_tongueOwner") > 0)
-		return true;*/
 	return false;
 }
 
@@ -444,7 +448,7 @@ int iGetClosestSurvivor(int client, int iExclude = -1, int entity, float fDistan
 	float fFOV = GetFOVDotProduct(g_fAimOffsetSensitivityTank);
 	for(i = 0; i < iCount; i++)
 	{
-		if(iTargets[i] && iTargets[i] != iExclude && GetClientTeam(iTargets[i]) == 2 && IsPlayerAlive(iTargets[i]) && !bIsIncapacitated(iTargets[i]) && !bIsPinned(iTargets[i]) && !bHitWall(client, entity, iTargets[i]))
+		if(iTargets[i] && iTargets[i] != iExclude && GetClientTeam(iTargets[i]) == 2 && IsPlayerAlive(iTargets[i]) && !IsIncapacitated(iTargets[i]) && !bIsPinned(iTargets[i]) && !bHitWall(client, entity, iTargets[i]))
 		{
 			GetClientEyePosition(iTargets[i], vTarg);
 			fDist = GetVectorDistance(vSrc, vTarg);

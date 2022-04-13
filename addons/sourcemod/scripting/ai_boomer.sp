@@ -91,8 +91,8 @@ public Action OnPlayerRunCmd(int client, int &buttons)
 		|| IsInfectedGhost(client))
 		return Plugin_Continue;
 
-	if(GetEntityFlags(client) 
-		& FL_ONGROUND && GetEntityMoveType(client) 
+	if(GetEntityFlags(client) & FL_ONGROUND 
+		&& GetEntityMoveType(client)
 		!= MOVETYPE_LADDER 
 		&& GetEntProp(client, Prop_Data, "m_nWaterLevel") < 2 
 		&& L4D_HasVisibleThreats(client)
