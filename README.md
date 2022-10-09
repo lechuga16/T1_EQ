@@ -3,16 +3,13 @@
 [EN] [translation](https://translate.google.com/translate?sl=es&tl=en&u=https://github.com/lechuga16/T1_EQ)
 
 # Diferencias Generales de EQ
-- Permite "Punch rock", "Jump Rock" y Haymaker.
-- Sistema de Bonus de vanilla, adicionalmente 50 puntos por matar a los jefes.
-- Anti-ff: El daño provocado se descontará del atacante.
-- La witch no perderá el objetivo aunque este dentro del refugio.
-- Sin restricciones de armas.
-- Sin restricciones de reaparición de zombis especiales.
+- 4 Píldoras en el mapa.
+- Sistema de bonus del modo versus, adicionalmente 50 puntos por matar a los jefes.
+- Sin restricciones para las armas smg, smg_silenced, pumpshotgun y shotgun_chrome.
+- Sin restricciones de reaparición de infectados bot.
 - Él pause se limita a 3 veces.
 - El rango de lerps para la interpolación es de 1 a 100.
-- Las píldoras adicionales que se encuentren en el mapa será de 4.
-
+- Él pause se podrá iniciar 3 veces.
 
 # Copyright
 - Tier1 EQ es una adaptación usando como base la configuración "Equilibrium 3.0c". 
