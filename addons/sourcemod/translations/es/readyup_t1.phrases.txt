@@ -1,0 +1,149 @@
+"Phrases"
+{
+// The following uses bracket style color tags (see colors.inc)
+	"PanelHide"
+	{
+		"es"		"[{olive}Readyup{default}] El panel ahora esta {red}desactivado{default}"
+	}
+	
+	"PanelShow"
+	{
+		"es"		"[{olive}Readyup{default}] El panel ahora esta {blue}activado{default}"
+	}
+	
+	"ForceStartAdmin"
+	{
+		"#format"	"{1:N}"
+		"es"		"[{olive}Readyup{default}] El inicio del juego es {green}forzado {default}por {olive}{1}{default}"
+	}
+	
+	"VoteInProgress"
+	{
+		"es"		"[{olive}Readyup{default}] Hay una {olive}votacion {default}en {green}curso{default}."
+	}
+	
+	"VoteDelay"
+	{
+		"#format"	"{1:d}"
+		"es"		"[{olive}Readyup{default}] Espere otros {blue}{1}s {default}para llamar a votacion."
+	}
+
+	"Player marked unready"
+	{
+		"#format"	"{1:N}"
+		"es"		"[{olive}!{default}] {green}Cuenta regresiva cancelada por {teamcolor}{1}{default}"
+	}
+
+	"Player marked unready2"
+	{
+		"#format"	"{1:N}"
+		"es"		"[{olive}!{default}] {green}Cuenta regresiva cancelada por{default} ({teamcolor}{1}{default}%s"
+	}
+	
+	"Player switched team"
+	{
+		"#format"	"{1:N}"
+		"es"		"[{olive}!{default}] {green}¡Cuenta regresiva cancelada, {default}({teamcolor}{1} {olive} se cambio de equipo{default})"
+	}
+	
+	"Player disconnected"
+	{
+		"#format"	"{1:N}"
+		"es"		"[{olive}!{default}] {green}Cuenta regresiva cancelada, {default}({teamcolor}{1} {green}se a desconectado{default})"
+	}
+	
+	"Admin aborted"
+	{
+		"#format"	"{1:N}"
+		"es"		"[{olive}!{default}] {green}Inicio forzado cancelado por {olive}{1}{default}"
+	}
+	
+	
+// The following are not allowed to use any color tag
+	"HintReady"
+	{
+		"es"		"Estás preparado\n ========== \nPresiona F2 para cancelar"
+	}
+	
+	"HintUnready"
+	{
+		"es"		"No estás preparado\n ========== \nPresiona F1 para confirmar"
+	}
+
+	"LiveCountdownBegin"
+	{
+		"es"		"¡Vamos a iniciar!\n ---------- \nPresiona F2 para cancelar"
+	}
+	
+	"LiveCountdown"
+	{
+		"#format"	"{1:d}"
+		"es"		"Iniciando en: {1}\n ---------- \nPresiona F2 para cancelar"
+	}
+	
+	"LiveCountdownCancelled"
+	{
+		"es"		"¡Cuenta regresiva cancelada!"
+	}
+
+	"UnReadyLimit"
+	{
+		"en"	"Has alcanzado tu límite de cancelación ({green}%d{default})."
+	}
+
+	"RoundIsLive"
+	{
+		"es"		"¡La ronda a comenzado!"
+	}
+	
+	"InitiateAutoStart"
+	{
+		"es"		"¡El juego comenzara automaticamente!"
+	}
+	
+	"AutoStartCountdown"
+	{
+		"es"		"El juego comienza en: %i"
+	}
+	
+	"AutoStartWaiting"
+	{
+		"es"		"Esperando a los jugadores..."
+	}
+
+	// readyup/panel.inc
+	"PanelSlots"
+	{
+		"en"		"▸ Servidor: %s \n▸ Espacios: %d/%d\n▸ Config: %s"
+	}
+
+	"PanelCommands"
+	{
+		"en"		"▸ Comandos:"
+	}
+
+	"PanelSurvivors"
+	{
+		"en"	"->%d. Superviviente%s"
+	}
+
+	"PanelInfected"
+	{
+		"en"	"->%d. Infectado%s"
+	}
+
+	"PanelCaster"
+	{
+		"en"	"->%d. Comentador%s"
+	}
+
+	"PanelSpectator"
+	{
+		"en"	"->%d. Espectador%s"
+	}
+
+	"PanelMany"
+	{
+		"en"	"**Muchos** (%d)"
+	}
+}
