@@ -30,7 +30,7 @@ public Plugin myinfo =
 #define L4D2Team_Survivor   2
 #define L4D2Team_Infected   3
 
-#define DEBUG 1
+#define DEBUG 0
 
 enum
 {
@@ -74,30 +74,13 @@ ConVar
 // Plugin Cvars
 ConVar 
 	// basic
-	l4d_ready_enabled,
-	l4d_ready_cfg_name,
-	l4d_ready_server_cvar,
-	l4d_ready_max_players,
+	l4d_ready_enabled, l4d_ready_cfg_name, l4d_ready_server_cvar, l4d_ready_max_players,
 	// game
-	l4d_ready_disable_spawns,
-	l4d_ready_survivor_freeze,
+	l4d_ready_disable_spawns, l4d_ready_survivor_freeze,
 	// sound
-	l4d_ready_enable_sound,
-	l4d_ready_notify_sound,
-	l4d_ready_countdown_sound,
-	l4d_ready_live_sound,
-	l4d_ready_autostart_sound,
-	l4d_ready_chuckle, 
-	l4d_ready_secret,
+	l4d_ready_enable_sound, l4d_ready_notify_sound, l4d_ready_countdown_sound, l4d_ready_live_sound, l4d_ready_autostart_sound, l4d_ready_chuckle, l4d_ready_secret,
 	// action
-	l4d_ready_delay,
-	l4d_ready_force_extra,
-	l4d_ready_autostart_delay,
-	l4d_ready_autostart_wait,
-	l4d_ready_autostart_min, 
-	l4d_ready_unbalanced_start,
-	l4d_ready_unbalanced_min,
-	l4d_ready_unreadylimit;
+	l4d_ready_delay, l4d_ready_force_extra, l4d_ready_autostart_delay, l4d_ready_autostart_wait, l4d_ready_autostart_min, l4d_ready_unbalanced_start, l4d_ready_unbalanced_min, l4d_ready_unready_limit;
 
 // Server Name
 ConVar
@@ -156,8 +139,8 @@ StringMap playerunReadyCount;
 #include "readyup_t1/native.inc"
 #include "readyup_t1/panel.inc"
 #include "readyup_t1/player.inc"
-#include "readyup_t1/sound.inc"
 #include "readyup_t1/setup.inc"
+#include "readyup_t1/sound.inc"
 #include "readyup_t1/util.inc"
 
 // ========================
@@ -324,7 +307,7 @@ Action Timer_PlayerTeam(Handle timer, DataPack dp)
 public void OnMapStart()
 {
 	PrecacheSounds();
-
+	
 	for (int client = 1; client <= MAXPLAYERS; client++)
 	{
 		g_hChangeTeamTimer[client] = null;
@@ -406,7 +389,10 @@ public Action L4D_OnFirstSurvivorLeftSafeArea(int client)
 	}
 	else
 	{
-		ResetUnReadyCount();
+		if(l4d_ready_unready_limit.IntValue > 0)
+		{
+			playerunReadyCount.Clear();
+		}
 	}
 	return Plugin_Continue;
 }
